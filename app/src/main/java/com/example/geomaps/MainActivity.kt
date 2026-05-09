@@ -285,6 +285,7 @@ class MainActivity : AppCompatActivity() {
 
         scope.launch {
             try {
+                clearRoute()
                 val response = withContext(Dispatchers.IO) {
                     service.getRoute(algorithm, req)
                 }

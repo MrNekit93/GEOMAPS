@@ -185,10 +185,11 @@ def route(algorithm):
         return jsonify({"error": "Unknown algorithm"}), 400
 
     speed = SPEEDS.get(transport, 60)
-    travel_hours = dist / speed
+    dist_km = dist / 1000
+    travel_hours = dist_km / speed
 
     return jsonify({
-        "distance_km": round(dist),
+        "distance_km": round(dist_km),
         "travel_hours": round(travel_hours, 1),
         "nodes_visited": visited,
         "path": path,
@@ -219,8 +220,10 @@ def compare():
     a_dist, a_path, a_visited = a_star(start, end, adj)
 
     speed = SPEEDS.get(transport, 60)
-    d_time = d_dist / speed
-    a_time = a_dist / speed
+    d_km = d_dist / 1000
+    a_km = a_dist / 1000
+    d_time = d_km / speed
+    a_time = a_km / speed
 
     # Calculate difference percentage
     if d_visited > 0:
@@ -230,14 +233,14 @@ def compare():
 
     return jsonify({
         "dijkstra": {
-            "distance_km": round(d_dist),
+            "distance_km": round(d_km),
             "travel_hours": round(d_time, 1),
             "nodes_visited": d_visited,
             "path": d_path,
             "algorithm": "dijkstra"
         },
         "a_star": {
-            "distance_km": round(a_dist),
+            "distance_km": round(a_km),
             "travel_hours": round(a_time, 1),
             "nodes_visited": a_visited,
             "path": a_path,
