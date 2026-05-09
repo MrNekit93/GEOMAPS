@@ -185,11 +185,11 @@ def route(algorithm):
         return jsonify({"error": "Unknown algorithm"}), 400
 
     speed = SPEEDS.get(transport, 60)
-    time_hours = dist / speed
+    travel_hours = dist / speed
 
     return jsonify({
-        "distance_m": round(dist * 1000),
-        "time_hours": round(time_hours, 2),
+        "distance_km": round(dist),
+        "travel_hours": round(travel_hours, 1),
         "nodes_visited": visited,
         "path": path,
         "algorithm": algorithm
@@ -230,15 +230,15 @@ def compare():
 
     return jsonify({
         "dijkstra": {
-            "distance_m": round(d_dist * 1000),
-            "time_hours": round(d_time, 2),
+            "distance_km": round(d_dist),
+            "travel_hours": round(d_time, 1),
             "nodes_visited": d_visited,
             "path": d_path,
             "algorithm": "dijkstra"
         },
         "a_star": {
-            "distance_m": round(a_dist * 1000),
-            "time_hours": round(a_time, 2),
+            "distance_km": round(a_dist),
+            "travel_hours": round(a_time, 1),
             "nodes_visited": a_visited,
             "path": a_path,
             "algorithm": "a_star"

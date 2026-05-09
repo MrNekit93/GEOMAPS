@@ -25,8 +25,8 @@ data class RouteRequest(
  * Модель ответа с маршрутом
  */
 data class RouteResponse(
-    val distance_m: Double? = null,
-    val time_hours: Double? = null,
+    val distance_km: Double? = null,
+    val travel_hours: Double? = null,
     val nodes_visited: Int? = null,
     val path: List<List<Double>>? = null,
     val algorithm: String? = null

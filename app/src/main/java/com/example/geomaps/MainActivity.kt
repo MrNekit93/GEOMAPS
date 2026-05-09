@@ -18,6 +18,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.views.overlay.MapEventsOverlay
+import java.util.Calendar
 
 data class City(val name: String, val lat: Double, val lon: Double)
 
@@ -293,8 +294,9 @@ class MainActivity : AppCompatActivity() {
 
                 if (response != null) {
                     drawRoute(response, Color.BLUE)
-                    val distM = (response.distance_m ?: 0.0).toInt()
-                    tvInfo.text = "Маршрут: ${distM} м, ${(response.time_hours ?: 0.0)} ч, узлов: ${response.nodes_visited ?: 0}"
+                    val distKm = (response.distance_km ?: 0.0).toInt()
+                    val arrival = calcArrival(response.travel_hours ?: 0.0)
+                    tvInfo.text = "${distKm} км, прибытие: ${arrival}"
                 } else {
                     tvInfo.text = "Ошибка построения маршрута"
                     Toast.makeText(this@MainActivity, "Ошибка построения маршрута", Toast.LENGTH_SHORT).show()
@@ -356,9 +358,11 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     val diff = response.difference_percent ?: 0.0
-                    val dijkstraDist = (response.dijkstra?.distance_m ?: 0.0).toInt()
-                    val aStarDist = (response.a_star?.distance_m ?: 0.0).toInt()
-                    tvInfo.text = "Дейкстра: ${dijkstraDist} м, ${response.dijkstra?.nodes_visited ?: 0} узлов\nA*: ${aStarDist} м, ${response.a_star?.nodes_visited ?: 0} узлов\nРазница: ${"%.1f".format(diff)}%"
+                    val dKm = (response.dijkstra?.distance_km ?: 0.0).toInt()
+                    val aKm = (response.a_star?.distance_km ?: 0.0).toInt()
+                    val dArrival = calcArrival(response.dijkstra?.travel_hours ?: 0.0)
+                    val aArrival = calcArrival(response.a_star?.travel_hours ?: 0.0)
+                    tvInfo.text = "Дейкстра: ${dKm} км, прибытие: ${dArrival}\nA*: ${aKm} км, прибытие: ${aArrival}\nУзлов: ${response.dijkstra?.nodes_visited ?: 0} vs ${response.a_star?.nodes_visited ?: 0}"
 
                     Toast.makeText(this@MainActivity, "Сравнение выполнено. Разница: ${"%.1f".format(diff)}%", Toast.LENGTH_SHORT).show()
                 } else {
@@ -373,6 +377,14 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun calcArrival(travelHours: Double): String {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.MINUTE, (travelHours * 60).toInt())
+        val hh = cal.get(Calendar.HOUR_OF_DAY)
+        val mm = cal.get(Calendar.MINUTE)
+        return "${"%02d".format(hh)}:${"%02d".format(mm)}"
     }
 
     private fun drawRoute(response: RouteResponse, color: Int) {
