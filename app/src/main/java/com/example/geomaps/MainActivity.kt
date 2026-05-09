@@ -37,14 +37,70 @@ class MainActivity : AppCompatActivity() {
         City("Витебск", 55.184, 30.204),
         City("Гомель", 52.431, 30.992),
         City("Могилёв", 53.916, 30.344),
+        City("Бобруйск", 53.156, 29.247),
         City("Барановичи", 53.130, 26.014),
         City("Борисов", 54.227, 28.506),
         City("Пинск", 52.115, 26.101),
-        City("Орша", 54.513, 30.425)
+        City("Орша", 54.513, 30.425),
+        City("Мозырь", 52.045, 29.253),
+        City("Солигорск", 52.8, 27.533),
+        City("Новополоцк", 55.533, 28.65),
+        City("Лида", 53.891, 25.3),
+        City("Молодечно", 54.312, 26.85),
+        City("Жлобин", 52.823, 30.016),
+        City("Светлогорск", 52.63, 29.73),
+        City("Речица", 52.366, 30.383),
+        City("Слоним", 53.083, 25.316),
+        City("Жодино", 54.103, 28.35),
+        City("Кобрин", 52.216, 24.366),
+        City("Полоцк", 55.483, 28.8),
+        City("Слуцк", 53.016, 27.55),
+        City("Калинковичи", 52.116, 29.333),
+        City("Горки", 54.283, 30.983),
+        City("Волковыск", 53.15, 24.466),
+        City("Сморгонь", 54.483, 26.4),
+        City("Рогачёв", 53.083, 30.05),
+        City("Дзержинск", 53.683, 27.133),
+        City("Кричев", 53.767, 31.633),
+        City("Лепель", 54.883, 28.683),
+        City("Мосты", 53.45, 24.533),
+        City("Несвиж", 53.22, 26.683),
+        City("Чаусы", 53.783, 31.15),
+        City("Столбцы", 53.467, 26.733),
+        City("Глубокое", 55.15, 27.7),
+        City("Добруш", 52.416, 31.316),
+        City("Лунинец", 52.25, 26.8),
+        City("Ивацевичи", 52.733, 25.333),
+        City("Шклов", 54.383, 30.283),
+        City("Берёза", 52.533, 24.983),
+        City("Поставы", 55.15, 27.133),
+        City("Логойск", 54.2, 27.833),
+        City("Смолевичи", 54.033, 27.983),
+        City("Вилейка", 54.5, 26.883),
+        City("Докшицы", 54.883, 27.95),
+        City("Славгород", 53.417, 31.117),
+        City("Крупки", 54.333, 29.117),
+        City("Чериков", 53.583, 31.4),
+        City("Быхов", 53.517, 30.25),
+        City("Климовичи", 53.617, 31.967),
+        City("Толочин", 54.5, 29.8),
+        City("Хойники", 52.15, 30.05),
+        City("Петриков", 52.133, 28.467),
+        City("Ельск", 51.817, 29.117),
+        City("Наровля", 51.783, 29.85),
+        City("Лельчицы", 52.283, 28.35),
+        City("Брагин", 52.05, 30.283),
+        City("Хотимск", 53.433, 32.083),
+        City("Краснополье", 53.583, 31.383),
+        City("Костюковичи", 53.35, 32.067),
+        City("Славгород", 53.417, 31.117),
+        City("Чечерск", 53.167, 30.917),
+        City("Рославль", 53.95, 32.85)
     )
 
     private var selectedStartCity: City? = null
     private var selectedEndCity: City? = null
+    private var selectedRouteType: String = "all"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -134,6 +190,22 @@ class MainActivity : AppCompatActivity() {
             if (selectedEndCity != null) setEndPoint(GeoPoint(selectedEndCity!!.lat, selectedEndCity!!.lon))
         }
 
+        val spinnerRouteType = findViewById<Spinner>(R.id.spinnerRouteType)
+        val routeTypes = listOf("Все дороги" to "all", "Только магистрали" to "motorway")
+        val routeTypeLabels = routeTypes.map { it.first }
+        val adapterRouteType = ArrayAdapter(this, android.R.layout.simple_spinner_item, routeTypeLabels)
+        adapterRouteType.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerRouteType.adapter = adapterRouteType
+
+        spinnerRouteType.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                selectedRouteType = routeTypes[pos].second
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {
+                selectedRouteType = "all"
+            }
+        }
+
         btnDijkstra.setOnClickListener {
             requestRoute("dijkstra")
         }
@@ -206,7 +278,8 @@ class MainActivity : AppCompatActivity() {
             start_lat = start.latitude,
             start_lon = start.longitude,
             end_lat = end.latitude,
-            end_lon = end.longitude
+            end_lon = end.longitude,
+            route_type = selectedRouteType
         )
 
         scope.launch {
@@ -220,11 +293,8 @@ class MainActivity : AppCompatActivity() {
 
                 if (response != null) {
                     drawRoute(response, Color.BLUE)
-                    tvInfo.text = "Маршрут: %.1f км, %.1f мин, узлов: %d".format(
-                        response.distance_km ?: 0.0,
-                        response.time_minutes ?: 0.0,
-                        response.nodes_visited ?: 0
-                    )
+                    val distM = (response.distance_m ?: 0.0).toInt()
+                    tvInfo.text = "Маршрут: ${distM} м, ${(response.time_hours ?: 0.0)} ч, узлов: ${response.nodes_visited ?: 0}"
                 } else {
                     tvInfo.text = "Ошибка построения маршрута"
                     Toast.makeText(this@MainActivity, "Ошибка построения маршрута", Toast.LENGTH_SHORT).show()
@@ -262,7 +332,8 @@ class MainActivity : AppCompatActivity() {
             start_lat = start.latitude,
             start_lon = start.longitude,
             end_lat = end.latitude,
-            end_lon = end.longitude
+            end_lon = end.longitude,
+            route_type = selectedRouteType
         )
 
         scope.launch {
@@ -285,13 +356,9 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     val diff = response.difference_percent ?: 0.0
-                    tvInfo.text = "Дейкстра: %.1f км, %d узлов\nA*: %.1f км, %d узлов\nРазница: %.1f%%".format(
-                        response.dijkstra?.distance_km ?: 0.0,
-                        response.dijkstra?.nodes_visited ?: 0,
-                        response.a_star?.distance_km ?: 0.0,
-                        response.a_star?.nodes_visited ?: 0,
-                        diff
-                    )
+                    val dijkstraDist = (response.dijkstra?.distance_m ?: 0.0).toInt()
+                    val aStarDist = (response.a_star?.distance_m ?: 0.0).toInt()
+                    tvInfo.text = "Дейкстра: ${dijkstraDist} м, ${response.dijkstra?.nodes_visited ?: 0} узлов\nA*: ${aStarDist} м, ${response.a_star?.nodes_visited ?: 0} узлов\nРазница: ${"%.1f".format(diff)}%"
 
                     Toast.makeText(this@MainActivity, "Сравнение выполнено. Разница: ${"%.1f".format(diff)}%", Toast.LENGTH_SHORT).show()
                 } else {

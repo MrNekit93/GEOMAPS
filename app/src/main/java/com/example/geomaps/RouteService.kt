@@ -25,8 +25,8 @@ data class RouteRequest(
  * Модель ответа с маршрутом
  */
 data class RouteResponse(
-    val distance_km: Double? = null,
-    val time_minutes: Double? = null,
+    val distance_m: Double? = null,
+    val time_hours: Double? = null,
     val nodes_visited: Int? = null,
     val path: List<List<Double>>? = null,
     val algorithm: String? = null
@@ -51,7 +51,7 @@ class RouteService {
         .build()
 
     private val gson = Gson()
-    private val baseUrl = "http://192.168.100.197:8000"
+    private val baseUrl = " http://10.39.35.109:8000"
 
     /**
      * Получение маршрута по алгоритму (Дейкстра или A*)

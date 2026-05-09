@@ -51,6 +51,25 @@ def find_nearest_node(lat, lon):
     return nearest
 
 
+def get_filtered_adjacency(route_type, start_node=None, end_node=None):
+    """Filter adjacency list based on route type."""
+    if route_type == "motorway":
+        filtered = {}
+        for node_id, edges in adjacency.items():
+            motorway_edges = [e for e in edges if e.get("type") in ("motorway", "trunk", "primary")]
+            if motorway_edges:
+                filtered[node_id] = motorway_edges
+
+        # Ensure start and end nodes are in filtered graph
+        if start_node and start_node not in filtered:
+            filtered[start_node] = adjacency.get(start_node, [])
+        if end_node and end_node not in filtered:
+            filtered[end_node] = adjacency.get(end_node, [])
+
+        return filtered
+    return adjacency
+
+
 def reconstruct_path(prev, start, end):
     """Reconstruct path from predecessors dictionary."""
     path = []
@@ -63,7 +82,7 @@ def reconstruct_path(prev, start, end):
     return path
 
 
-def dijkstra(start, end):
+def dijkstra(start, end, adj):
     """Dijkstra's algorithm."""
     dist = {node: float("inf") for node in nodes}
     prev = {}
@@ -80,7 +99,7 @@ def dijkstra(start, end):
         if u == end:
             break
 
-        for edge in adjacency.get(u, []):
+        for edge in adj.get(u, []):
             v = str(edge["target"])
             weight = edge["weight"]
 
@@ -93,7 +112,7 @@ def dijkstra(start, end):
     return dist[end], reconstruct_path(prev, start, end), visited_count
 
 
-def a_star(start, end):
+def a_star(start, end, adj):
     """A* algorithm with haversine heuristic."""
     open_set = []
     heapq.heappush(open_set, (0, start))
@@ -113,7 +132,7 @@ def a_star(start, end):
         if current == end:
             break
 
-        for edge in adjacency.get(current, []):
+        for edge in adj.get(current, []):
             neighbor = str(edge["target"])
             tentative_g = g_score[current] + edge["weight"]
 
@@ -156,19 +175,21 @@ def route(algorithm):
     if not start or not end:
         return jsonify({"error": "Invalid points"}), 400
 
+    adj = get_filtered_adjacency(route_type)
+
     if algorithm == 'dijkstra':
-        dist, path, visited = dijkstra(start, end)
+        dist, path, visited = dijkstra(start, end, adj)
     elif algorithm == 'a_star':
-        dist, path, visited = a_star(start, end)
+        dist, path, visited = a_star(start, end, adj)
     else:
         return jsonify({"error": "Unknown algorithm"}), 400
 
     speed = SPEEDS.get(transport, 60)
-    time_minutes = (dist / speed) * 60
+    time_hours = dist / speed
 
     return jsonify({
-        "distance_km": dist,
-        "time_minutes": time_minutes,
+        "distance_m": round(dist * 1000),
+        "time_hours": round(time_hours, 2),
         "nodes_visited": visited,
         "path": path,
         "algorithm": algorithm
@@ -184,6 +205,7 @@ def compare():
     end_lat = data.get('end_lat')
     end_lon = data.get('end_lon')
     transport = data.get('transport', 'car')
+    route_type = data.get('route_type', 'all')
 
     start = find_nearest_node(start_lat, start_lon)
     end = find_nearest_node(end_lat, end_lon)
@@ -191,12 +213,14 @@ def compare():
     if not start or not end:
         return jsonify({"error": "Invalid points"}), 400
 
-    d_dist, d_path, d_visited = dijkstra(start, end)
-    a_dist, a_path, a_visited = a_star(start, end)
+    adj = get_filtered_adjacency(route_type)
+
+    d_dist, d_path, d_visited = dijkstra(start, end, adj)
+    a_dist, a_path, a_visited = a_star(start, end, adj)
 
     speed = SPEEDS.get(transport, 60)
-    d_time = (d_dist / speed) * 60
-    a_time = (a_dist / speed) * 60
+    d_time = d_dist / speed
+    a_time = a_dist / speed
 
     # Calculate difference percentage
     if d_visited > 0:
@@ -206,15 +230,15 @@ def compare():
 
     return jsonify({
         "dijkstra": {
-            "distance_km": d_dist,
-            "time_minutes": d_time,
+            "distance_m": round(d_dist * 1000),
+            "time_hours": round(d_time, 2),
             "nodes_visited": d_visited,
             "path": d_path,
             "algorithm": "dijkstra"
         },
         "a_star": {
-            "distance_km": a_dist,
-            "time_minutes": a_time,
+            "distance_m": round(a_dist * 1000),
+            "time_hours": round(a_time, 2),
             "nodes_visited": a_visited,
             "path": a_path,
             "algorithm": "a_star"
