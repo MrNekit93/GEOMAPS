@@ -145,7 +145,7 @@ def a_star(start, end, adj):
                     nodes[neighbor]["lon"],
                     end_node["lat"],
                     end_node["lon"]
-                )
+                ) * 1000
 
                 f = tentative_g + h
                 heapq.heappush(open_set, (f, neighbor))
